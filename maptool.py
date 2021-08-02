@@ -1,6 +1,5 @@
 # -*- coding:gbk -*
 
-import urllib
 from urllib import parse
 from urllib.request import urlretrieve
 from urllib.error import HTTPError
@@ -28,13 +27,13 @@ def getResUrl(url, mapid, i, j):
     return parse.urljoin(url, '%s/%d_%d.jpg' % (mapid, i, j))
 
 
-def fetchMapRes(url, mapid, resdir, nrows=100, ncols=100):
+def fetchMapRes(url, mapid, savedir, nrows=100, ncols=100):
     '''
     从文件服务器抓取地图块，保存到本地文件夹
     '''
-    resdir = os.path.join(resdir, str(mapid))
-    if not os.path.exists(resdir):
-        os.makedirs(resdir)
+    savedir = os.path.join(savedir, str(mapid))
+    if not os.path.exists(savedir):
+        os.makedirs(savedir)
 
     jmax = None
     for i in range(nrows + 1):
@@ -43,7 +42,7 @@ def fetchMapRes(url, mapid, resdir, nrows=100, ncols=100):
                 break
             resurl = getResUrl(url, mapid, i, j)
             print('fetch url: ' + resurl)
-            filename = '%s\\%d_%d.jpg' % (resdir, i, j)
+            filename = '%s\\%d_%d.jpg' % (savedir, i, j)
             resp, trytimes = None, 0
             while resp == None:
                 try:
@@ -139,7 +138,7 @@ class FrameFetch(tk.Frame):
         if ret == 0:
             messagebox.showinfo(message='下载完成')
         else:
-            messagebox.showinfo(message=err)
+            messagebox.showerror(message=err)
 
 
 class FrameMerge(tk.Frame):
@@ -178,7 +177,7 @@ class FrameMerge(tk.Frame):
         if ret == 0:
             messagebox.showinfo(message='完成')
         else:
-            messagebox.showinfo(message=err)
+            messagebox.showerror(message=err)
 
 
 class GUI(tk.Tk):

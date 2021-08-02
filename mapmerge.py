@@ -79,7 +79,6 @@ def _test():
 
 
 if __name__ == '__main__':
-    global args
     args = parser.parse_args()
     # print(args)
     args.path = os.path.abspath(args.path)
