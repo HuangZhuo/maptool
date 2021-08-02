@@ -11,6 +11,12 @@ python3 only!
 > pip install -r requirements.txt  
 > pyinstaller -F .\maptool.py -w
 
+## history
+### V0.0.1
+- 完成基本功能
+### V0.0.2
+- 多线程改造，下载不阻塞UI
+
 ## dev
 ### gen requirements
 > pip install pipreqs  
