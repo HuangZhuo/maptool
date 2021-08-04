@@ -1,6 +1,5 @@
 # -*- coding:gbk -*
 
-from urllib import parse
 from urllib.request import urlretrieve
 from urllib.error import HTTPError
 import os
@@ -16,7 +15,7 @@ from tkinter.filedialog import askdirectory
 
 from mapmerge import mergeMap
 
-_VERSION = '0.0.2'
+_VERSION = '0.0.3'
 
 
 class CFG:
@@ -41,28 +40,40 @@ class CLICache:
         return CLICache._queue.get()
 
 
-def getResUrl(url, mapid, i, j):
-    if not url.endswith('/'):
-        url += '/'
-    return parse.urljoin(url, '%s/%d_%d.jpg' % (mapid, i, j))
+def getResUrl(url, name, i, j):
+    # not good code but simple here
+    try:
+        return eval("f'%s'" % url)
+    except:
+        return None
 
 
-def fetchMapRes(url, mapid, savedir, nrows=100, ncols=100):
+def getFileName(url):
+    return os.path.basename(url)
+
+
+def fetchMapRes(url, mapname, savedir, nrows=10000, ncols=10000):
     '''
     从文件服务器抓取地图块，保存到本地文件夹
     '''
-    savedir = os.path.join(savedir, str(mapid))
+    savedir = os.path.join(savedir, str(mapname))
     if not os.path.exists(savedir):
         os.makedirs(savedir)
 
+    # trick：与{j}/ncols无关，兼容一维索引
+    if getResUrl(url, '', 0, 0) == getResUrl(url, '', 0, 1):
+        ncols = 1
+
     jmax = None
-    for i in range(nrows + 1):
-        for j in range(ncols + 1):
+    for i in range(nrows):
+        for j in range(ncols):
             if jmax and j >= jmax:
                 break
-            resurl = getResUrl(url, mapid, i, j)
+            resurl = getResUrl(url, mapname, i, j)
+            if not resurl:
+                return -2, '链接格式错误'
             print('fetch url: ' + resurl)
-            filename = '%s\\%d_%d.jpg' % (savedir, i, j)
+            filename = os.path.join(savedir, getFileName(resurl))
             resp, trytimes = None, 0
             while resp == None:
                 try:
@@ -98,9 +109,42 @@ def _draft():
     print(f)
 
 
+class FrameEdit(tk.Frame):
+    '''
+    输入框封装
+    '''
+    def __init__(self, *args, text="输入", hint=None, width=15):
+        super().__init__(*args, pady=5)
+        self._lbl = tk.Label(self, text=text)
+        self._edit = tk.Entry(self, width=width, bg='white', fg='black')
+        self._lbl.pack(side=tk.LEFT)
+        self._edit.pack(side=tk.LEFT, fill=tk.X)
+        if hint:
+            tk.Label(self, text=hint, fg='blue').pack(side=tk.LEFT)
+
+    def get(self):
+        return self._edit.get().strip()
+
+    def set(self, input):
+        self._edit.delete(0, tk.END)
+        self._edit.insert(0, input)
+        return self
+
+    def pack(self, **kwargs):
+        super().pack(**kwargs)
+        return self
+
+    def setEnabled(self, st):
+        self._edit.config(state=tk.NORMAL if st else tk.DISABLED)
+        return self
+
+
 class FrameDirSelect(tk.Frame):
+    '''
+    路径选择
+    '''
     def __init__(self, *args, text='路径'):
-        super().__init__(*args)
+        super().__init__(*args, pady=5)
         self._lbl = tk.Label(self, text=text)
         self._edit = tk.Entry(self, width=50, bg='white', fg='black')
         self._btn = tk.Button(self, text='选择', command=self.onSelectClick)
@@ -117,6 +161,10 @@ class FrameDirSelect(tk.Frame):
     def get(self):
         return self._edit.get()
 
+    def pack(self, **kwargs):
+        super().pack(**kwargs)
+        return self
+
 
 class FrameFetch(tk.Frame):
     def __init__(self, *args):
@@ -127,19 +175,13 @@ class FrameFetch(tk.Frame):
         self.after(CFG.THREAD_CHECK_TIME_IN_MS, self._update)
 
     def initUI(self):
-        self._lblUrl = tk.Label(self, text='链接')
-        self._editUrl = tk.Entry(self, bg='white', fg='black')
-        self._lblMap = tk.Label(self, text='地图ID')
-        self._editMap = tk.Entry(self, bg='white', fg='black')
-        self._dir = FrameDirSelect(self, text='保存路径')
+        self._editUrl = FrameEdit(self, text='链   接:', width=55).pack(fill=tk.X)
+        self._editMap = FrameEdit(self, text='地图名:', hint='链接插值 {name}').pack(fill=tk.X)
+        self._editRow = FrameEdit(self, text='最大行:', hint='链接插值 {i} | {i+1}表示索引从1开始').set('自动获取').setEnabled(False).pack(fill=tk.X)
+        self._editCol = FrameEdit(self, text='最大列:', hint='链接插值 {j}').set('自动获取').setEnabled(False).pack(fill=tk.X)
 
+        self._dir = FrameDirSelect(self, text='保存路径').pack(fill=tk.X)
         self._btn = tk.Button(self, text='下载', bg='green', command=self.onFetchClick)
-
-        self._lblUrl.pack(fill=tk.X)
-        self._editUrl.pack(fill=tk.X)
-        self._lblMap.pack(fill=tk.X)
-        self._editMap.pack(fill=tk.X)
-        self._dir.pack(fill=tk.X)
 
         self._btn.pack(fill=tk.X)
 
@@ -162,8 +204,8 @@ class FrameFetch(tk.Frame):
         if len(url) == 0:
             messagebox.showinfo(message='请输入链接')
             return
-        mapid = self._editMap.get().strip()
-        if len(mapid) == 0:
+        mapname = self._editMap.get().strip()
+        if len(mapname) == 0:
             messagebox.showinfo(message='请输入地图ID')
             return
         dir = self._dir.get().strip()
@@ -174,7 +216,7 @@ class FrameFetch(tk.Frame):
         if not os.path.exists(dir):
             os.makedirs(dir)
 
-        self._task = self._pool.submit(fetchMapRes, url, mapid, dir)
+        self._task = self._pool.submit(fetchMapRes, url, mapname, dir)
 
 
 class FrameMerge(tk.Frame):
@@ -183,15 +225,10 @@ class FrameMerge(tk.Frame):
         self.initUI()
 
     def initUI(self):
-        self._dir = FrameDirSelect(self, text='选择路径')
-        self._lblMode = tk.Label(self, text='拼接模式（目前支持1|2）')
-        self._editMode = tk.Entry(self, bg='white', fg='black')
-        self._editMode.insert(0, '1')
-        self._btn = tk.Button(self, text='合并', bg='green', command=self.onMergeClick)
+        self._dir = FrameDirSelect(self, text='选择路径').pack(fill=tk.X)
+        self._editMode = FrameEdit(self, text='拼接模式', hint='*目前支持1|2|3(一维索引)').set('1').pack(fill=tk.X)
 
-        self._dir.pack(fill=tk.X)
-        self._lblMode.pack(fill=tk.X)
-        self._editMode.pack(fill=tk.X)
+        self._btn = tk.Button(self, text='合并', bg='green', command=self.onMergeClick)
         self._btn.pack(fill=tk.X)
 
     def onMergeClick(self):
@@ -220,15 +257,15 @@ class GUI(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title('地图工具 v%s' % (_VERSION))
-        self.geometry('450x250')
+        self.geometry('450x350')
         self.resizable(False, False)
         self.initUI()
         self.after(CFG.CLI_UPDATE_TIME_IN_MS, self._update)
 
     def initUI(self):
         self._notebook = Notebook(self)
-        self._notebook.add(FrameFetch(), text='下载')
-        self._notebook.add(FrameMerge(), text='合并')
+        self._notebook.add(FrameFetch(), text=' 下 载 ')
+        self._notebook.add(FrameMerge(), text=' 合 并 ')
         self._notebook.pack(fill=tk.BOTH, expand=1)
 
         self._cli = tk.Text(self, bg="white", fg="black")
