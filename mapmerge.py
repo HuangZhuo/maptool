@@ -6,94 +6,126 @@ import argparse
 from PIL import Image
 from sys import exit
 
-parser = argparse.ArgumentParser(description='将地图块拼接成完整地图')
-parser.add_argument('-p', '--path', required=True, help='地图块文件夹路径')
-parser.add_argument('-m',
-                    '--mode',
-                    default=1,
-                    type=int,
-                    choices=[1, 2, 3],
-                    help='合并模式，暂时支持1|2|3(一维索引)，如果生成错乱图片可以切换模式再试')
-parser.add_argument('-o', '--output', help='输出大地图文件路径')
 
+def getMapPieceCount(fmt, resdir):
+    '''
+    获取本地地图块 imax,jmax
+    '''
+    def exist(resdir, i, j):
+        filename = eval("f'{resdir}\\%s'" % fmt)
+        return os.path.exists(filename)
 
-def getMapPieceCount(resdir):
-    '''
-    获取本地地图块X,Y方向块数
-    '''
     i, j = 0, 0
+    while exist(resdir, i, j):
+        i += 1
+    if i == 0:
+        return 0, 0
+    i -= 1
+    while exist(resdir, i, j):
+        j += 1
+    return i + 1, j
+
+
+def getMapPieceExt(resdir):
     for dir in os.listdir(resdir):
-        if os.path.isdir(os.path.join(resdir, dir)):
+        filename = os.path.join(resdir, dir)
+        if os.path.isdir(filename):
             continue
-        match = re.match(r'^[m]?(\d+)_(\d+).jpg$', dir)
-        if not match:
-            continue
-        # print(match.group(1))
-        i = max(i, int(match.group(1)) + 1)
-        j = max(j, int(match.group(2)) + 1)
-    return i, j
+        _, ext = os.path.splitext(filename)
+        return ext
+    return None
 
 
-def mergeMap(resdir, outputfile, mode=1):
-    '''
-    将本地地图块拼接成完整地图，成功返回0，否则返回负数和错误描述
-    ref: https://www.jb51.net/article/165457.htm
-    '''
-    if mode == 3:
-        return mergeMap3(resdir, outputfile)
-
-    def image(i, j):
-        filename = '%s\\%d_%d.jpg' % (resdir, i, j)
-        if not os.path.exists(filename):
-            filename = '%s\\m%d_%d.jpg' % (resdir, i, j)
+def image(fmt, resdir, i, j):
+    try:
+        filename = eval("f'{resdir}\\%s'" % fmt)
         if not os.path.exists(filename):
             return None, '无法找到地图块文件: ' + filename
         return Image.open(filename), None
+    except:
+        return None, '图片名格式化异常'
 
-    pw, ph = getMapPieceCount(resdir)
-    if pw == 0:
-        return -3, '没有地图块'
-    meta, err = image(0, 0)
+
+def mergeMap(resdir, mode=None, file_format=None, i_max=None, j_max=None, outputfile=None):
+    '''
+    图片拼接模式(mode=1 / 默认)：
+    0_0|0_1|0_2|0_3
+    1_0|1_1|1_2|1_3
+    2_0|2_1|2_2|2_3
+
+    图片拼接模式(mode=2 / XY反转)：
+    0_0|1_0|2_0|3_0
+    0_1|1_1|2_1|3_1
+    0_2|1_2|2_2|3_2
+
+    图片拼接模式(mode=3 / 一维索引)：
+    1| 2| 3| 4
+    5| 6| 7| 8
+    9|10|11|12
+
+    将本地地图块拼接成完整地图，成功返回0，否则返回负数和错误描述
+    ref: https://www.jb51.net/article/165457.htm
+    '''
+    mode = mode if mode else 1
+    if not mode in set([1, 2, 3]):
+        return -2, '不支持的模式拼接模式: ' + str(mode)
+    if mode == 3:
+        return mergeMap3(resdir, mode, file_format, i_max, j_max, outputfile)
+    if file_format:
+        # if file_format.find('{i}') < 0 or file_format.find('{j}') < 0:
+        #     return -4, '文件名格式错误'
+        pass
+    else:
+        file_format = '{i}_{j}.jpg'
+
+    if not i_max or not j_max:
+        # 推断块数
+        i_max, j_max = getMapPieceCount(file_format, resdir)
+    if i_max == 0:
+        return -3, f'没有地图块：{file_format}'
+    meta, err = image(file_format, resdir, 0, 0)
     if not meta:
         return -1, err
-    w, h = meta.width, meta.height
     # print(meta)
+    w, h = meta.width, meta.height
+    margin, err = image(file_format, resdir, i_max - 1, j_max - 1)
+    padx, pady = meta.width - margin.width, meta.height - margin.height
     imgRet = None
     if mode == 1:
-        imgRet = Image.new(meta.mode, (w * ph, h * pw))
+        imgRet = Image.new(meta.mode, (w * j_max - padx, h * i_max - pady))
     elif mode == 2:
-        imgRet = Image.new(meta.mode, (w * pw, h * ph))
-    else:
-        return -2, '不支持的模式拼接模式: ' + str(mode)
-    for i in range(pw):
-        for j in range(ph):
-            tmp, err = image(i, j)
+        imgRet = Image.new(meta.mode, (w * i_max - padx, h * j_max - pady))
+    for i in range(i_max):
+        for j in range(j_max):
+            tmp, err = image(file_format, resdir, i, j)
             if not tmp:
                 return -1, err
             if mode == 1:
                 imgRet.paste(tmp, box=(j * w, i * h))
             elif mode == 2:
                 imgRet.paste(tmp, box=(i * w, j * h))
-            else:
-                return -2, '不支持的模式拼接模式: ' + str(mode)
 
+    if not outputfile:
+        _, ext = os.path.splitext(meta.filename)
+        outputfile = resdir + ext
     imgRet.save(outputfile)
     return 0, '成功'
 
 
-def getMapPieceCount3(resdir, meta):
+def tryGetMapPieceCount3(resdir, ext):
     '''
-    获取本地地图块X,Y方向块数
-    图片拼接模式：
-    1| 2| 3| 4
-    5| 6| 7| 8
-    9|10|11|12
+    尝试获取一维本地地图块 imax,jmax
     '''
+    if not ext:
+        return 0, 0
+    meta = None
     i, j, total = 0, 0, 0
     while True:
-        fdir = f'{resdir}\\{total+1}.jpg'
+        fdir = f'{resdir}\\{total+1}{ext}'
         if not os.path.exists(fdir):
             break
+        if total == 0:
+            meta = Image.open(fdir)
         total += 1
         if meta:
             j = total
@@ -106,51 +138,46 @@ def getMapPieceCount3(resdir, meta):
     return i, j
 
 
-def mergeMap3(resdir, outputfile):
+def mergeMap3(resdir, mode=None, file_format=None, i_max=None, j_max=None, outputfile=None):
     '''
     一维索引文件格式拼接，思路
     1. 尝试根据地图块大小，推断出边界块数（相对简单有效！）
     2. 尝试因数分解（因数分解结果也不唯一，暂时不打算做）
     3. 识别图片边缘是否相连（可能用到图像识别相关技术，也先不研究）
+
     '''
-    def image(n):
-        filename = f'{resdir}\\{n}.jpg'
-        if not os.path.exists(filename):
-            return None, '无法找到地图块文件: ' + filename
-        return Image.open(filename), None
+    if file_format == None:
+        ext = getMapPieceExt(resdir)
+        if not ext:
+            return -5, '无法推断文件名后缀'
+        if not j_max:
+            i_max, j_max = tryGetMapPieceCount3(resdir, ext)
+            if j_max == 0:
+                return -6, '无法推断图片宽高'
+        file_format = '{i*%d+j+1}%s' % (j_max, ext)
+    else:
+        # master user
+        pass
 
-    meta, err = image(1)
-    if not meta:
-        return -1, err
-    # pv:pieces vertical; ph:pices horizontal
-    pv, ph = getMapPieceCount3(resdir, meta)
-    if pv <= 1:
-        return -4, '无法推断地图边界块数'
-    w, h = meta.width, meta.height
-
-    # 不均匀裁切计算实际大小
-    margin, err = image(pv * ph)
-    padx, pady = meta.width - margin.width, meta.height - margin.height
-    imgRet = Image.new(meta.mode, (w * ph - padx, h * pv - pady))
-    for i in range(pv):
-        for j in range(ph):
-            tmp, err = image(i * ph + j + 1)
-            if not tmp:
-                return -1, err
-            # 左上角顶点坐标系
-            imgRet.paste(tmp, box=(j * w, i * h))
-    imgRet.save(outputfile)
-    return 0, '成功'
+    # 转化为二维处理
+    return mergeMap(resdir, 1, file_format, i_max, j_max, outputfile)
 
 
 if __name__ == '__main__':
+    # 命令行规则
+    parser = argparse.ArgumentParser(description='将地图块拼接成完整地图')
+    parser.add_argument('-p', '--path', required=True, help='地图块文件夹路径')
+    parser.add_argument('-m', '--mode', type=int, choices=[1, 2, 3], help='拼接模式：1-二维索引，2-二维索引反转，3-一维索引')
+    parser.add_argument('-i', '--i_max', type=int, help='{i}索引最大值')
+    parser.add_argument('-j', '--j_max', type=int, help='{j}索引最大值')
+    parser.add_argument('-f', '--file-format', help='文件匹配格式，例如：{i}_{j}.jpg')
+    parser.add_argument('-o', '--output', help='输出大地图文件路径')
+
     args = parser.parse_args()
-    # print(args)
+    print(args)
     args.path = os.path.abspath(args.path)
     if not os.path.exists(args.path) or not os.path.isdir(args.path):
         print('文件夹不存在')
         exit(-1)
-    if not args.output:
-        args.output = args.path + '.jpg'
 
-    exit(mergeMap(args.path, args.output, args.mode))
+    exit(mergeMap(args.path, args.output, args.mode, args.i_max, args.j_max, args.file_format))

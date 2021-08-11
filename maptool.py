@@ -15,7 +15,7 @@ from tkinter.filedialog import askdirectory
 
 from mapmerge import mergeMap
 
-_VERSION = '0.0.3'
+_VERSION = '0.0.4'
 
 
 class CFG:
@@ -60,7 +60,7 @@ def fetchMapRes(url, mapname, savedir, nrows=10000, ncols=10000):
     if not os.path.exists(savedir):
         os.makedirs(savedir)
 
-    # trick：与{j}/ncols无关，兼容一维索引
+    # 与{j}/ncols无关，兼容一维索引
     if getResUrl(url, '', 0, 0) == getResUrl(url, '', 0, 1):
         ncols = 1
 
@@ -177,7 +177,8 @@ class FrameFetch(tk.Frame):
     def initUI(self):
         self._editUrl = FrameEdit(self, text='链   接:', width=55).pack(fill=tk.X)
         self._editMap = FrameEdit(self, text='地图名:', hint='链接插值 {name}').pack(fill=tk.X)
-        self._editRow = FrameEdit(self, text='最大行:', hint='链接插值 {i} | {i+1}表示索引从1开始').set('自动获取').setEnabled(False).pack(fill=tk.X)
+        self._editRow = FrameEdit(self, text='最大行:',
+                                  hint='链接插值 {i} | {i+1}表示索引从1开始').set('自动获取').setEnabled(False).pack(fill=tk.X)
         self._editCol = FrameEdit(self, text='最大列:', hint='链接插值 {j}').set('自动获取').setEnabled(False).pack(fill=tk.X)
 
         self._dir = FrameDirSelect(self, text='保存路径').pack(fill=tk.X)
@@ -226,27 +227,46 @@ class FrameMerge(tk.Frame):
 
     def initUI(self):
         self._dir = FrameDirSelect(self, text='选择路径').pack(fill=tk.X)
-        self._editMode = FrameEdit(self, text='拼接模式', hint='*目前支持1|2|3(一维索引)').set('1').pack(fill=tk.X)
+        self._editMode = FrameEdit(self, text='拼接模式', hint='*1-二维索引，2-二维索引反转，3-一维索引').set('1').pack(fill=tk.X)
+        self._editFmt = FrameEdit(self, text='文件匹配', hint='*例如：{i}_{j}.jpg').set('{i}_{j}.jpg').pack(fill=tk.X)
+        self._editJMax = FrameEdit(self, text='横向块数', hint='*一维索引模式用').pack(fill=tk.X)
+        self._editIMax = FrameEdit(self, text='竖向块数').set('自动获取').setEnabled(False).pack(fill=tk.X)
 
         self._btn = tk.Button(self, text='合并', bg='green', command=self.onMergeClick)
         self._btn.pack(fill=tk.X)
 
     def onMergeClick(self):
+        # dir
         dir = self._dir.get().strip()
         if len(dir) == 0:
-            messagebox.showinfo(message='请输入保存路径')
+            messagebox.showinfo(message='请输入路径')
             return
         dir = os.path.abspath(dir)
         if not os.path.exists(dir):
             messagebox.showerror(message='目录不存在')
             return
+        # mode
         mode = self._editMode.get().strip()
         try:
             mode = int(mode)
         except ValueError:
             messagebox.showerror(message='模式输入有误')
             return
-        ret, err = mergeMap(dir, dir + '.jpg', mode=mode)
+        # jmax
+        jmax = self._editJMax.get().strip()
+        try:
+            if len(jmax) == 0:
+                jmax = None
+            else:
+                jmax = int(jmax)
+        except ValueError:
+            messagebox.showerror(message='块数输入有误')
+            return
+        # fmt
+        fmt = self._editFmt.get().strip()
+        fmt = fmt if len(fmt) > 0 else None
+
+        ret, err = mergeMap(dir, mode=mode, file_format=fmt, j_max=jmax)
         if ret == 0:
             messagebox.showinfo(message='完成')
         else:
