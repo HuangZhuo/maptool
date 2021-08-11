@@ -36,6 +36,14 @@ def test_mergeMap3():
     print(mergeMap(args['path'], args['mode'], args['file_format']))
 
 
+def test_mergeMap4():
+    '''
+    测试一维索引拼接 PNG格式
+    '''
+    args = {'path': 'tmp\\10116_2264', 'mode': 3, 'file_format': None}
+    print(mergeMap(args['path'], args['mode'], args['file_format'], i_max=None, j_max=35))
+
+
 def test_fetchMapRes():
     fetchMapRes('https://cdn-hhzz.qixia.ltd/res/map/{name}/tiles/{i+1}.jpg', '10013_205', 'tmp')
 
@@ -48,4 +56,5 @@ if __name__ == '__main__':
     # test_mergeMap1()
     # test_mergeMap2()
     # test_mergeMap3()
+    # test_mergeMap4()
     pass

@@ -90,11 +90,14 @@ def mergeMap(resdir, mode=None, file_format=None, i_max=None, j_max=None, output
     w, h = meta.width, meta.height
     margin, err = image(file_format, resdir, i_max - 1, j_max - 1)
     padx, pady = meta.width - margin.width, meta.height - margin.height
-    imgRet = None
+    imgRet, imgMode = None, meta.mode
+    if imgMode == 'P':
+        # pngÃÿ ‚¥¶¿Ì
+        imgMode = 'RGBA'
     if mode == 1:
-        imgRet = Image.new(meta.mode, (w * j_max - padx, h * i_max - pady))
+        imgRet = Image.new(imgMode, (w * j_max - padx, h * i_max - pady))
     elif mode == 2:
-        imgRet = Image.new(meta.mode, (w * i_max - padx, h * j_max - pady))
+        imgRet = Image.new(imgMode, (w * i_max - padx, h * j_max - pady))
     for i in range(i_max):
         for j in range(j_max):
             tmp, err = image(file_format, resdir, i, j)
