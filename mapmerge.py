@@ -1,7 +1,6 @@
 # -*- coding:gbk -*
 
 import os.path
-import re
 import argparse
 from PIL import Image
 from sys import exit
@@ -20,10 +19,9 @@ def getMapPieceCount(fmt, resdir):
         i += 1
     if i == 0:
         return 0, 0
-    i -= 1
-    while exist(resdir, i, j):
+    while exist(resdir, i - 1, j):
         j += 1
-    return i + 1, j
+    return i, j
 
 
 def getMapPieceExt(resdir):

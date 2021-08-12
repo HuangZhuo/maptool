@@ -52,7 +52,7 @@ def getFileName(url):
     return os.path.basename(url)
 
 
-def fetchMapRes(url, mapname, savedir, nrows=10000, ncols=10000):
+def fetchMapRes(url, mapname, savedir, imax=10000, jmax=10000):
     '''
     从文件服务器抓取地图块，保存到本地文件夹
     '''
@@ -60,13 +60,13 @@ def fetchMapRes(url, mapname, savedir, nrows=10000, ncols=10000):
     if not os.path.exists(savedir):
         os.makedirs(savedir)
 
-    # 与{j}/ncols无关，兼容一维索引
+    # 与{j}/jmax无关，兼容一维索引
     if getResUrl(url, '', 0, 0) == getResUrl(url, '', 0, 1):
-        ncols = 1
+        jmax = 1
 
     jmax = None
-    for i in range(nrows):
-        for j in range(ncols):
+    for i in range(imax):
+        for j in range(jmax):
             if jmax and j >= jmax:
                 break
             resurl = getResUrl(url, mapname, i, j)
@@ -98,15 +98,6 @@ def fetchMapRes(url, mapname, savedir, nrows=10000, ncols=10000):
                     return 0, None
             else:
                 print('file saved: ' + filename)
-
-
-def _draft():
-    '''
-    草稿
-    '''
-    resurl = 'http://tx14.static.xyimg.net/lycq/res_x/map/75/104/0_46.jpg'
-    f, r = urlretrieve(resurl, 'tmp.jpg')
-    print(f)
 
 
 class FrameEdit(tk.Frame):
