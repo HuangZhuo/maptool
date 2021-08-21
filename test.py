@@ -3,7 +3,7 @@
 import unittest
 
 from mapmerge import mergeMap
-from maptool import fetchMapRes
+from mapfetch import fetchMapRes
 
 
 class TestMerge(unittest.TestCase):

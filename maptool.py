@@ -1,10 +1,7 @@
 # -*- coding:gbk -*
 
-from urllib.request import urlretrieve
-from urllib.error import HTTPError
 import os
 import os.path
-import time
 from queue import Queue
 from concurrent.futures import ThreadPoolExecutor
 
@@ -14,90 +11,33 @@ from tkinter.ttk import Notebook
 from tkinter.filedialog import askdirectory
 
 from mapmerge import mergeMap
+from mapfetch import fetchMapRes
 
 _VERSION = '0.0.4'
 
 
 class CFG:
-    MAX_FETCH_TRY_TIMES = 5
     CLI_UPDATE_TIME_IN_MS = 100
     THREAD_CHECK_TIME_IN_MS = 10
 
 
+TaskExecutor = ThreadPoolExecutor(max_workers=1)
+
+
 class CLICache:
-    _queue = Queue()
+    __queue = Queue()
 
-    @staticmethod
-    def write(str):
-        CLICache._queue.put(str)
+    @classmethod
+    def write(cls, str):
+        cls.__queue.put(str)
 
-    @staticmethod
-    def empty():
-        return CLICache._queue.empty()
+    @classmethod
+    def empty(cls):
+        return cls.__queue.empty()
 
-    @staticmethod
-    def get():
-        return CLICache._queue.get()
-
-
-def getResUrl(url, name, i, j):
-    # not good code but simple here
-    try:
-        return eval("f'%s'" % url)
-    except:
-        return None
-
-
-def getFileName(url):
-    return os.path.basename(url)
-
-
-def fetchMapRes(url, mapname, savedir, imax=10000, jmax=10000):
-    '''
-    从文件服务器抓取地图块，保存到本地文件夹
-    '''
-    savedir = os.path.join(savedir, str(mapname))
-    if not os.path.exists(savedir):
-        os.makedirs(savedir)
-
-    # 与{j}/jmax无关，兼容一维索引
-    if getResUrl(url, '', 0, 0) == getResUrl(url, '', 0, 1):
-        jmax = 1
-
-    jmax = None
-    for i in range(imax):
-        for j in range(jmax):
-            if jmax and j >= jmax:
-                break
-            resurl = getResUrl(url, mapname, i, j)
-            if not resurl:
-                return -2, '链接格式错误'
-            print('fetch url: ' + resurl)
-            filename = os.path.join(savedir, getFileName(resurl))
-            resp, trytimes = None, 0
-            while resp == None:
-                try:
-                    trytimes = trytimes + 1
-                    _, resp = urlretrieve(resurl, filename)
-                except HTTPError:
-                    print('404 Not Found')
-                    if jmax == None:
-                        jmax = j
-                    break
-                except IOError:
-                    if trytimes > CFG.MAX_FETCH_TRY_TIMES:
-                        return -1, '下载失败，请检查链接是否正确'
-                    print('try again')
-                    time.sleep(0.1)
-                    pass
-            if not resp:
-                if i == 0 and j == 0:
-                    return -1, '下载失败，请检查链接是否正确'
-                if i > 0 and j == 0:
-                    print('finished!')
-                    return 0, None
-            else:
-                print('file saved: ' + filename)
+    @classmethod
+    def get(cls):
+        return cls.__queue.get()
 
 
 class FrameEdit(tk.Frame):
@@ -106,9 +46,8 @@ class FrameEdit(tk.Frame):
     '''
     def __init__(self, *args, text="输入", hint=None, width=15):
         super().__init__(*args, pady=5)
-        self._lbl = tk.Label(self, text=text)
+        tk.Label(self, text=text).pack(side=tk.LEFT)
         self._edit = tk.Entry(self, width=width, bg='white', fg='black')
-        self._lbl.pack(side=tk.LEFT)
         self._edit.pack(side=tk.LEFT, fill=tk.X)
         if hint:
             tk.Label(self, text=hint, fg='blue').pack(side=tk.LEFT)
@@ -132,16 +71,14 @@ class FrameEdit(tk.Frame):
 
 class FrameDirSelect(tk.Frame):
     '''
-    路径选择
+    路径选择封装
     '''
     def __init__(self, *args, text='路径'):
         super().__init__(*args, pady=5)
-        self._lbl = tk.Label(self, text=text)
+        tk.Label(self, text=text).pack(side=tk.LEFT)
         self._edit = tk.Entry(self, width=50, bg='white', fg='black')
-        self._btn = tk.Button(self, text='选择', command=self.onSelectClick)
-        self._lbl.pack(side=tk.LEFT)
         self._edit.pack(side=tk.LEFT, fill=tk.X)
-        self._btn.pack(side=tk.LEFT)
+        tk.Button(self, text='选择', command=self.onSelectClick).pack(side=tk.LEFT)
 
     def onSelectClick(self):
         dir = askdirectory(initialdir=os.getcwd()).strip()
@@ -160,7 +97,6 @@ class FrameDirSelect(tk.Frame):
 class FrameFetch(tk.Frame):
     def __init__(self, *args):
         super().__init__(*args)
-        self._pool = ThreadPoolExecutor(max_workers=1)
         self._task = None
         self.initUI()
         self.after(CFG.THREAD_CHECK_TIME_IN_MS, self._update)
@@ -208,7 +144,7 @@ class FrameFetch(tk.Frame):
         if not os.path.exists(dir):
             os.makedirs(dir)
 
-        self._task = self._pool.submit(fetchMapRes, url, mapname, dir)
+        self._task = TaskExecutor.submit(fetchMapRes, url, mapname, dir)
 
 
 class FrameMerge(tk.Frame):
