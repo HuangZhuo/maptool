@@ -23,8 +23,8 @@ POS_DIR_NAME = 'Placements'
 
 def getBoundingBox(im: Image) -> Tuple:
     '''
-    获取有效像素边界，返回两个坐标
-    以左上角为原点
+    获取有效像素矩形边界，返回两个坐标（左上角为原点）
+    这里暂时用最简单的算法，遍历所有像素点
     '''
     imarr = numpy_array(im)
     # height,width,channel

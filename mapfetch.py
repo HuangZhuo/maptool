@@ -3,6 +3,7 @@
 import os
 import os.path
 import time
+from urllib.request import urlopen
 from urllib.request import urlretrieve
 from urllib.error import HTTPError
 
@@ -18,6 +19,7 @@ def getResUrl(url, name, i, j):
 
 
 def getFileName(url):
+    '''获取url中的文件名'''
     return os.path.basename(url)
 
 
@@ -67,3 +69,20 @@ def fetchMapRes(url, mapname, savedir, nrows=10000, ncols=10000):
                     return 0, None
             else:
                 print('file saved: ' + filename)
+
+
+def checkMapResExist(url, mapname):
+    '''检查地图资源是否存在'''
+    resurl = getResUrl(url, mapname, 0, 0)
+    resp, trytimes = None, 0
+    while resp == None:
+        try:
+            trytimes = trytimes + 1
+            resp = urlopen(resurl)
+        except HTTPError:
+            print('404 Not Found')
+            break
+        except Exception:
+            if trytimes > MAX_FETCH_TRY_TIMES:
+                break
+    return resp and resp.getcode() == 200

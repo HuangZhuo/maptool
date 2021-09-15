@@ -3,13 +3,15 @@
 - 从链接下载指定地图所有地图块
 - 将地图块合并成大地图
 
-## demo
-![maptool_demo.gif](assets/maptool_demo.gif)
-
 ## build
 python3 only!
 > pip install -r requirements.txt  
 > pyinstaller -F .\maptool.py -w
+
+## plan
+- [x] 添加测试按钮检查资源是否可用
+- 停止下载功能
+- 设置地图id搜索区间批量下载地图并自动完成合并
 
 ## history
 ### V0.0.4

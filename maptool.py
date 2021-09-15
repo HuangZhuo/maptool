@@ -11,6 +11,7 @@ from tkinter.ttk import Notebook
 from tkinter.filedialog import askdirectory
 
 from mapmerge import mergeMap
+from mapfetch import checkMapResExist
 from mapfetch import fetchMapRes
 
 _VERSION = '0.0.4'
@@ -40,17 +41,16 @@ class CLICache:
         return cls.__queue.get()
 
 
-class FrameEdit(tk.Frame):
-    '''
-    输入框封装
-    '''
-    def __init__(self, *args, text="输入", hint=None, width=15):
+class FrameInput(tk.Frame):
+    def __init__(self, *args, text="输入", width=15):
         super().__init__(*args, pady=5)
         tk.Label(self, text=text).pack(side=tk.LEFT)
         self._edit = tk.Entry(self, width=width, bg='white', fg='black')
-        self._edit.pack(side=tk.LEFT, fill=tk.X)
-        if hint:
-            tk.Label(self, text=hint, fg='blue').pack(side=tk.LEFT)
+        self._edit.pack(side=tk.LEFT, fill=tk.X, ipady=1)
+
+    def pack(self, **kwargs):
+        super().pack(**kwargs)
+        return self
 
     def get(self):
         return self._edit.get().strip()
@@ -60,24 +60,27 @@ class FrameEdit(tk.Frame):
         self._edit.insert(0, input)
         return self
 
-    def pack(self, **kwargs):
-        super().pack(**kwargs)
-        return self
-
     def setEnabled(self, st):
         self._edit.config(state=tk.NORMAL if st else tk.DISABLED)
         return self
 
 
-class FrameDirSelect(tk.Frame):
+class FrameEdit(FrameInput):
+    '''
+    输入框封装
+    '''
+    def __init__(self, *args, text="输入", hint=None, width=15):
+        super().__init__(*args, text=text, width=width)
+        if hint:
+            tk.Label(self, text=hint, fg='blue').pack(side=tk.LEFT)
+
+
+class FrameDirSelect(FrameInput):
     '''
     路径选择封装
     '''
     def __init__(self, *args, text='路径'):
-        super().__init__(*args, pady=5)
-        tk.Label(self, text=text).pack(side=tk.LEFT)
-        self._edit = tk.Entry(self, width=50, bg='white', fg='black')
-        self._edit.pack(side=tk.LEFT, fill=tk.X)
+        super().__init__(*args, text=text, width=50)
         tk.Button(self, text='选择', command=self.onSelectClick).pack(side=tk.LEFT)
 
     def onSelectClick(self):
@@ -85,13 +88,6 @@ class FrameDirSelect(tk.Frame):
         if len(dir) > 0:
             self._edit.delete(0, tk.END)
             self._edit.insert(0, dir)
-
-    def get(self):
-        return self._edit.get()
-
-    def pack(self, **kwargs):
-        super().pack(**kwargs)
-        return self
 
 
 class FrameFetch(tk.Frame):
@@ -109,9 +105,8 @@ class FrameFetch(tk.Frame):
         self._editCol = FrameEdit(self, text='最大列:', hint='链接插值 {j}').set('自动获取').setEnabled(False).pack(fill=tk.X)
 
         self._dir = FrameDirSelect(self, text='保存路径').pack(fill=tk.X)
-        self._btn = tk.Button(self, text='下载', bg='green', command=self.onFetchClick)
-
-        self._btn.pack(fill=tk.X)
+        tk.Button(self, text='测  试', command=self.onTestClick).pack(side=tk.LEFT, fill=tk.X, expand=True)
+        tk.Button(self, text='下  载', bg='green', command=self.onFetchClick).pack(side=tk.LEFT, fill=tk.X, expand=True)
 
     def _update(self):
         if self._task:
@@ -123,6 +118,20 @@ class FrameFetch(tk.Frame):
                     messagebox.showerror(message=err)
                 self._task = None
         self.after(CFG.THREAD_CHECK_TIME_IN_MS, self._update)
+
+    def onTestClick(self):
+        url = self._editUrl.get().strip()
+        if len(url) == 0:
+            messagebox.showinfo(message='请输入链接')
+            return
+        mapname = self._editMap.get().strip()
+        if len(mapname) == 0:
+            messagebox.showinfo(message='请输入地图ID')
+            return
+        if checkMapResExist(url, mapname):
+            messagebox.showinfo(message='资源可以下载')
+        else:
+            messagebox.showerror(message='资源不存在')
 
     def onFetchClick(self):
         if self._task:

@@ -7,9 +7,7 @@ from sys import exit
 
 
 def getMapPieceCount(fmt, resdir):
-    '''
-    获取本地地图块 imax,jmax
-    '''
+    '''获取本地地图块 imax,jmax'''
     def exist(resdir, i, j):
         filename = eval("f'{resdir}\\%s'" % fmt)
         return os.path.exists(filename)
@@ -25,6 +23,7 @@ def getMapPieceCount(fmt, resdir):
 
 
 def getMapPieceExt(resdir):
+    '''获取地图块文件后缀名'''
     for dir in os.listdir(resdir):
         filename = os.path.join(resdir, dir)
         if os.path.isdir(filename):
