@@ -32,6 +32,17 @@ class TestMerge(unittest.TestCase):
         ret, err = mergeMap(args['path'], args['mode'], args['file_format'], i_max=None, j_max=35)
         self.assertEqual(0, ret, err)
 
+    def test_mergeMap5(self):
+        '''
+        图片拼接模式(XY反转 + 左下角原点)：
+        0_2|1_2|2_2|3_2
+        0_1|1_1|2_1|3_1
+        0_0|1_0|2_0|3_0
+        '''
+        args = {'path': 'tmp\\front', 'mode': 2, 'file_format': 'pic{i}_{11-j}.jpg'}
+        ret, err = mergeMap(args['path'], args['mode'], args['file_format'])
+        self.assertEqual(0, ret, err)
+
 
 class TestFetch(unittest.TestCase):
     def test_fetchMapRes1(self):
@@ -53,6 +64,7 @@ if __name__ == '__main__':
     suite.addTest(TestMerge('test_mergeMap2'))
     suite.addTest(TestMerge('test_mergeMap3'))
     suite.addTest(TestMerge('test_mergeMap4'))
+    suite.addTest(TestMerge('test_mergeMap5'))
 
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)
