@@ -91,6 +91,9 @@ def mergeMap(resdir, mode=None, file_format=None, i_max=None, j_max=None, output
     if imgMode == 'P':
         # png特殊处理
         imgMode = 'RGBA'
+    if imgMode == 'L':
+        # sRGB 特殊处理，否则会导出为灰图
+        imgMode = 'RGB'
     if mode == 1:
         imgRet = Image.new(imgMode, (w * j_max - padx, h * i_max - pady))
     elif mode == 2:

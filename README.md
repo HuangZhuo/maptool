@@ -5,8 +5,7 @@
 
 ## build
 python3 only!
-> pip install -r requirements.txt  
-> pyinstaller -F .\maptool.py -w
+> build.bat
 
 ## plan
 - [x] 添加测试按钮检查资源是否可用
