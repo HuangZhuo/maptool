@@ -13,8 +13,9 @@ from tkinter.filedialog import askdirectory
 from mapmerge import mergeMap
 from mapfetch import checkMapResExist
 from mapfetch import fetchMapRes
+from splitLayaAtlas.splitLayaAtlas import dispose1file
 
-_VERSION = '0.0.4'
+_VERSION = '0.0.5'
 
 
 class CFG:
@@ -89,6 +90,17 @@ class FrameDirSelect(FrameInput):
             self._edit.delete(0, tk.END)
             self._edit.insert(0, dir)
 
+    def get(self, bCheck=False):
+        dir = self._edit.get().strip()
+        if bCheck:
+            if len(dir) == 0:
+                messagebox.showinfo(message='请输入路径')
+                return None
+            dir = os.path.abspath(dir)
+            if not os.path.exists(dir):
+                messagebox.showerror(message='目录不存在')
+                return None
+        return dir
 
 class FrameFetch(tk.Frame):
     def __init__(self, *args):
@@ -145,7 +157,7 @@ class FrameFetch(tk.Frame):
         if len(mapname) == 0:
             messagebox.showinfo(message='请输入地图ID')
             return
-        dir = self._dir.get().strip()
+        dir = self._dir.get()
         if len(dir) == 0:
             messagebox.showinfo(message='请输入保存路径')
             return
@@ -173,13 +185,8 @@ class FrameMerge(tk.Frame):
 
     def onMergeClick(self):
         # dir
-        dir = self._dir.get().strip()
-        if len(dir) == 0:
-            messagebox.showinfo(message='请输入路径')
-            return
-        dir = os.path.abspath(dir)
-        if not os.path.exists(dir):
-            messagebox.showerror(message='目录不存在')
+        dir = self._dir.get(True)
+        if not dir:
             return
         # mode
         mode = self._editMode.get().strip()
@@ -209,6 +216,37 @@ class FrameMerge(tk.Frame):
             messagebox.showerror(message=err)
 
 
+class AtlasSplit(tk.Frame):
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.initUI()
+
+    def initUI(self):
+        tk.Label(self, text='将目录下所有.atlas图集，拆分为散图').pack(fill=tk.X)
+        self._dir = FrameDirSelect(self, text='选择路径').pack(fill=tk.X)
+        self._btn = tk.Button(self, text='拆分', bg='green', command=self.onSplitClick)
+        self._btn.pack(fill=tk.X)
+
+    def onSplitClick(self):
+        dir = self._dir.get()
+        if not dir:
+            return
+        count = 0
+        for d in os.listdir(dir):
+            filename = os.path.join(dir, d)
+            if os.path.isdir(filename):
+                continue
+            name, ext = os.path.splitext(filename)
+            if ext == '.atlas':
+                try:
+                    dispose1file(name)
+                    count += 1
+                except Exception as e:
+                    print(repr(e))
+                    break
+        messagebox.showinfo(message=f'完成拆分{count}个图集')
+
+
 class GUI(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -222,6 +260,7 @@ class GUI(tk.Tk):
         self._notebook = Notebook(self)
         self._notebook.add(FrameFetch(), text=' 下 载 ')
         self._notebook.add(FrameMerge(), text=' 合 并 ')
+        self._notebook.add(AtlasSplit(), text='atlas拆分')
         self._notebook.pack(fill=tk.BOTH, expand=1)
 
         self._cli = tk.Text(self, bg="white", fg="black")
