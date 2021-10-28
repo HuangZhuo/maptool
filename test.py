@@ -44,19 +44,6 @@ class TestMerge(unittest.TestCase):
         self.assertEqual(0, ret, err)
 
 
-class TestFetch(unittest.TestCase):
-    def test_fetchMapRes1(self):
-        '''测试一维索引地图块下载'''
-        ret, err = fetchMapRes('https://cdn-hhzz.qixia.ltd/res/map/{name}/tiles/{i+1}.jpg', '10013_205', 'tmp')
-        self.assertEqual(0, ret, err)
-
-    def test_fetchMapRes2(self):
-        '''测试二维索引地图块下载'''
-        url = 'https://reszsfy.cqzq6.com/cdn/zsjx/res/map/{name}/tiles/y{i}_x{j}.jpg'
-        ret, err = fetchMapRes(url, '20133_349', 'tmp')
-        self.assertEqual(0, ret, err)
-
-
 if __name__ == '__main__':
     # unittest.main()
     suite = unittest.TestSuite()
