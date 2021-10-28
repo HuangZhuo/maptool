@@ -1,0 +1,3 @@
+[submodule "splitLayaAtlas"]
+	path = splitLayaAtlas
+	url = https://github.com/cn-qiuhong/splitLayaAtlas.git
