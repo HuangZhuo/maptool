@@ -43,6 +43,14 @@ class TestMerge(unittest.TestCase):
         ret, err = mergeMap(args['path'], args['mode'], args['file_format'])
         self.assertEqual(0, ret, err)
 
+    def test_mergeMap6(self):
+        '''
+        针对[57]的BUG修复，打包出来的图片为0字节
+        '''
+        args = {'path': 'tmp\\57', 'mode': 2, 'file_format': '{i}_{j}.jpg'}
+        ret, err = mergeMap(args['path'], args['mode'], args['file_format'])
+        self.assertEqual(0, ret, err)
+
 
 if __name__ == '__main__':
     # unittest.main()
@@ -52,6 +60,7 @@ if __name__ == '__main__':
     suite.addTest(TestMerge('test_mergeMap3'))
     suite.addTest(TestMerge('test_mergeMap4'))
     suite.addTest(TestMerge('test_mergeMap5'))
+    suite.addTest(TestMerge('test_mergeMap6'))
 
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)

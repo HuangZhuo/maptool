@@ -110,8 +110,14 @@ def mergeMap(resdir, mode=None, file_format=None, i_max=None, j_max=None, output
 
     if not outputfile:
         _, ext = os.path.splitext(meta.filename)
+        if imgMode == 'RGBA':
+            ext = '.png'
         outputfile = resdir + ext
-    imgRet.save(outputfile)
+    try:
+        imgRet.save(outputfile)
+    except Exception as e:
+        print(str(e))
+        return -5, repr(e)
     return 0, '³É¹¦'
 
 
