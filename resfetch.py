@@ -49,6 +49,7 @@ def fetchAll(url: str, manifest, savedir, onProgress):
             data = future.result()
             finished += 1
             onProgress(total, finished, data)
+    return 0, None
 
 
 def fetchOne(url, filename):

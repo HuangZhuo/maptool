@@ -9,7 +9,8 @@
         "**/build": true,
         "**/dist": true,
         "*.pyc": true,
-        "**/.DS_Store": true
+        "**/.DS_Store": true,
+        "*.spec": true
     },
     "python.testing.unittestArgs": [
         "-v",
