@@ -57,9 +57,15 @@ def fetchOne(url, filename):
     下载位于url的文件，保存到至filename
     '''
     # return url, filename
+    if os.path.exists(filename):
+        return 0, '文件已存在'
     dir = os.path.dirname(filename)
     if not os.path.exists(dir):
-        os.makedirs(dir)
+        try:
+            # todo: 这里是不是在主线程中一次性将目录创建好更合理点
+            os.makedirs(dir)
+        except:
+            pass
     resp, trytimes = None, 0
     while resp == None:
         try:
@@ -73,11 +79,3 @@ def fetchOne(url, filename):
             time.sleep(0.1)
             pass
     return 0, filename
-
-
-def test():
-    pass
-
-
-if __name__ == '__main__':
-    test()
