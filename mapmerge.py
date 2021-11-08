@@ -9,7 +9,7 @@ from sys import exit
 def getMapPieceCount(fmt, resdir):
     '''获取本地地图块 imax,jmax'''
     def exist(resdir, i, j):
-        filename = eval("f'{resdir}\\%s'" % fmt)
+        filename = eval("f'{resdir}\\\\%s'" % fmt)
         return os.path.exists(filename)
 
     i, j = 0, 0
@@ -35,7 +35,7 @@ def getMapPieceExt(resdir):
 
 def image(fmt, resdir, i, j):
     try:
-        filename = eval("f'{resdir}\\%s'" % fmt)
+        filename = eval("f'{resdir}\\\\%s'" % fmt)
         if not os.path.exists(filename):
             return None, '无法找到地图块文件: ' + filename
         return Image.open(filename), None

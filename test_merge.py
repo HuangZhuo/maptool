@@ -50,6 +50,32 @@ class TestMerge(unittest.TestCase):
         ret, err = mergeMap(args['path'], args['mode'], args['file_format'])
         self.assertEqual(0, ret, err)
 
+    def test_mergeMap6(self):
+        '''
+        块数：0-27, 0-18
+        '''
+        args = {'path': 'tmp\\159', 'mode': 3, 'file_format': '{(i*28+j):05}.jpg'}
+        ret, err = mergeMap(args['path'], args['mode'], args['file_format'])
+        self.assertEqual(0, ret, err)
+
+    def test_mergeMap7(self):
+        '''
+        块数：0-27, 0-18
+        左边有两列无效图块，进行跳过处理
+        '''
+        args = {'path': 'tmp\\159', 'mode': 3, 'file_format': '{(i*26+j+2*(i+1)):05}.jpg'}
+        ret, err = mergeMap(args['path'], args['mode'], args['file_format'])
+        self.assertEqual(0, ret, err)
+
+    def test_mergeMap8(self):
+        '''
+        如果文件名带v拼接字符串会由于出现`\v`(python中的垂直制表符)变成转义字符`\x0b`(ascii码中的垂直制表符)，导致找不到文件
+        tmp\\v103\x0b103_r1_c1.jpg
+        '''
+        args = {'path': 'tmp\\v103', 'mode': 1, 'file_format': 'v103_r{i+1}_c{j+1}.jpg'}
+        ret, err = mergeMap(args['path'], args['mode'], args['file_format'])
+        self.assertEqual(0, ret, err)
+
 
 if __name__ == '__main__':
     # unittest.main()
