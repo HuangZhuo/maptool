@@ -76,16 +76,25 @@ class TestMerge(unittest.TestCase):
         ret, err = mergeMap(args['path'], args['mode'], args['file_format'])
         self.assertEqual(0, ret, err)
 
+    def test_mergeMap9(self):
+        '''
+        223
+        ͬtest_mergeMap5
+        '''
+        args = {'path': 'tmp\\223', 'mode': 2, 'file_format': 'pic{i}_{9-j}.jpg'}
+        ret, err = mergeMap(args['path'], args['mode'], args['file_format'])
+        self.assertEqual(0, ret, err)
 
 if __name__ == '__main__':
     # unittest.main()
-    suite = unittest.TestSuite()
-    suite.addTest(TestMerge('test_mergeMap1'))
-    suite.addTest(TestMerge('test_mergeMap2'))
-    suite.addTest(TestMerge('test_mergeMap3'))
-    suite.addTest(TestMerge('test_mergeMap4'))
-    suite.addTest(TestMerge('test_mergeMap5'))
-    suite.addTest(TestMerge('test_mergeMap6'))
+    # suite = unittest.TestSuite()
+    # suite.addTest(TestMerge('test_mergeMap1'))
+    # suite.addTest(TestMerge('test_mergeMap2'))
+    # suite.addTest(TestMerge('test_mergeMap3'))
+    # suite.addTest(TestMerge('test_mergeMap4'))
+    # suite.addTest(TestMerge('test_mergeMap5'))
+    # suite.addTest(TestMerge('test_mergeMap6'))
 
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run(suite)
+    # runner = unittest.TextTestRunner(verbosity=2)
+    # runner.run(suite)
+    pass
