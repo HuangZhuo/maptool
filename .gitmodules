@@ -1,3 +1,4 @@
 [submodule "splitLayaAtlas"]
 	path = splitLayaAtlas
 	url = https://github.com/HuangZhuo/splitLayaAtlas.git
+	branch = master
